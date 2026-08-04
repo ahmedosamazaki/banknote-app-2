@@ -146,7 +146,7 @@ function AdminView() {
         <main className="flex-1 max-w-2xl mx-auto w-full">
           <AdminDashboard />
         </main>
-        <Footer />
+        <Footer showSupport={false} />
       </div>
     );
   }
