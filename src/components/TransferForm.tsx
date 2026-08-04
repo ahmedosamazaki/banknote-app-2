@@ -192,23 +192,30 @@ export default function TransferForm() {
 
       // Mirror to Google Sheets (fire-and-forget; data is safe in Supabase regardless).
       // Built client-side since reps (anon) no longer have SELECT access — see RLS migration.
-      fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-to-sheets`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            ...newTransfer,
-            status: 'pending',
-            created_at: new Date().toISOString(),
-          }),
-        }
-      ).catch(() => {
+      // Wrapped in try/catch (not just .catch) because fetch() can throw
+      // synchronously while building the Headers object, before it ever
+      // returns a promise — a malformed env var must never block submission.
+      try {
+        fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-to-sheets`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              ...newTransfer,
+              status: 'pending',
+              created_at: new Date().toISOString(),
+            }),
+          }
+        ).catch(() => {
+          // Silently ignore — Supabase is the source of truth
+        });
+      } catch {
         // Silently ignore — Supabase is the source of truth
-      });
+      }
 
       setSubmitted(true);
       setForm(INITIAL_FORM);
@@ -218,7 +225,12 @@ export default function TransferForm() {
       setAiResult(null);
       setOtherWalletMode(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'حدث خطأ أثناء الإرسال';
+      let msg = 'حدث خطأ أثناء الإرسال';
+      if (err instanceof Error) {
+        msg = err.message;
+      } else if (err && typeof err === 'object' && 'message' in err) {
+        msg = String((err as { message: unknown }).message);
+      }
       setError(msg);
     } finally {
       setSubmitting(false);
