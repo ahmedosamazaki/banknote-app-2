@@ -1,9 +1,9 @@
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Sparkles } from 'lucide-react';
 import { SUPPORT_WHATSAPP_URL } from '@/config';
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-900 border-t border-slate-700/50 py-4 mt-auto">
+    <footer className="bg-slate-900 border-t border-slate-700/50 py-5 mt-auto">
       <div className="max-w-2xl mx-auto px-4 flex flex-col items-center gap-3">
         <a
           href={SUPPORT_WHATSAPP_URL}
@@ -14,9 +14,16 @@ export default function Footer() {
           <MessageCircle className="w-4 h-4" />
           تواصل مع الدعم الفني
         </a>
-        <p className="text-slate-500 text-xs text-center">
-          صنع بواسطة الفريق الفني —{' '}
-          <span className="text-emerald-400 font-semibold">أحمد أسامة</span>
+        <p
+          dir="ltr"
+          className="flex items-center gap-1.5 text-slate-500 text-[11px] tracking-wide uppercase"
+        >
+          <Sparkles className="w-3 h-3 text-emerald-500/70" />
+          Crafted by Technical Team
+          <span className="text-slate-700">·</span>
+          <span className="text-emerald-400 font-semibold normal-case tracking-normal">
+            Ahmed Osama
+          </span>
         </p>
       </div>
     </footer>

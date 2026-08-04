@@ -142,6 +142,13 @@ export default function TransferForm() {
     e.preventDefault();
     setError(null);
     if (!validate()) return;
+    if (aiResult?.isSuspicious) {
+      setError(
+        aiResult.suspicionReason ||
+          'الإيصال يبدو مشتبهاً به ولا يمكن إرسال التحويل به. غيّر الصورة أو تواصل مع الدعم الفني.'
+      );
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -409,7 +416,7 @@ export default function TransferForm() {
               <div className="absolute bottom-0 inset-x-0 bg-red-500/90 px-3 py-2 flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-white flex-shrink-0" />
                 <span className="text-white text-xs font-medium">
-                  الإيصال يبدو مشتبهاً به — سيتم مراجعته يدوياً
+                  الإيصال يبدو مشتبهاً به — لا يمكن إرسال التحويل
                 </span>
               </div>
             )}
@@ -425,7 +432,7 @@ export default function TransferForm() {
           <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 rounded-xl p-3.5 mt-2">
             <ShieldAlert className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
             <p className="text-red-400 text-sm leading-relaxed">
-              {aiResult.suspicionReason || 'الإيصال يحتاج مراجعة يدوية من الإدارة قبل القبول.'}
+              {aiResult.suspicionReason || 'الإيصال يبدو معدّلاً أو غير حقيقي، رجاءً ارفع صورة أخرى أو تواصل مع الدعم الفني.'}
             </p>
           </div>
         )}
@@ -553,7 +560,7 @@ export default function TransferForm() {
 
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || !!aiResult?.isSuspicious}
         className="w-full bg-gradient-to-l from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:from-emerald-600 active:to-teal-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/20 transition-all duration-200 text-base"
       >
         {submitting ? (
