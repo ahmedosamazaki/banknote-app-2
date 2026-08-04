@@ -16,6 +16,7 @@ import {
   Calendar,
   Download,
   Landmark,
+  Building2,
   QrCode,
   ShieldAlert,
 } from 'lucide-react';
@@ -44,6 +45,7 @@ export default function AdminDashboard() {
   const [selectedTransfer, setSelectedTransfer] = useState<Transfer | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [bankReport, setBankReport] = useState<string>('');
+  const [branchReport, setBranchReport] = useState<string>('');
   const [showQrCode, setShowQrCode] = useState(false);
 
   const fetchTransfers = useCallback(async () => {
@@ -91,6 +93,14 @@ export default function AdminDashboard() {
     [transfers]
   );
 
+  const uniqueBranches = useMemo(
+    () =>
+      Array.from(new Set(transfers.map((t) => t.branch_name).filter((b): b is string => !!b?.trim()))).sort(
+        (a, b) => a.localeCompare(b, 'ar')
+      ),
+    [transfers]
+  );
+
   const filtered = transfers.filter((t) => {
     const q = search.toLowerCase();
     const matchSearch =
@@ -103,7 +113,8 @@ export default function AdminDashboard() {
     const matchStatus = statusFilter === 'all' || t.status === statusFilter;
     const matchType = typeFilter === 'all' || t.transfer_type === typeFilter;
     const matchBank = !bankReport || t.bank_name === bankReport;
-    return matchSearch && matchStatus && matchType && matchBank;
+    const matchBranch = !branchReport || t.branch_name === branchReport;
+    return matchSearch && matchStatus && matchType && matchBank && matchBranch;
   });
 
   const totalAmount = filtered.reduce((s, t) => s + Number(t.transfer_amount), 0);
@@ -120,6 +131,18 @@ export default function AdminDashboard() {
       rejected: rows.filter((t) => t.status === 'rejected').length,
     };
   }, [transfers, bankReport]);
+
+  const branchReportStats = useMemo(() => {
+    if (!branchReport) return null;
+    const rows = transfers.filter((t) => t.branch_name === branchReport);
+    return {
+      count: rows.length,
+      total: rows.reduce((s, t) => s + Number(t.transfer_amount), 0),
+      pending: rows.filter((t) => t.status === 'pending').length,
+      approved: rows.filter((t) => t.status === 'approved').length,
+      rejected: rows.filter((t) => t.status === 'rejected').length,
+    };
+  }, [transfers, branchReport]);
 
   const exportCsv = () => {
     if (filtered.length === 0) return;
@@ -290,11 +313,43 @@ export default function AdminDashboard() {
         )}
       </div>
 
+      {/* Branch Report Tool */}
+      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 space-y-3">
+        <label className="flex items-center gap-1.5 text-slate-300 text-sm font-medium">
+          <Building2 className="w-4 h-4 text-emerald-400" />
+          تقرير تحويلات فرع معيّن
+        </label>
+        <div className="relative">
+          <select
+            value={branchReport}
+            onChange={(e) => setBranchReport(e.target.value)}
+            className="w-full appearance-none bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
+          >
+            <option value="">اختر فرع لعرض تقريره...</option>
+            {uniqueBranches.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        </div>
+
+        {branchReportStats && (
+          <div className="grid grid-cols-4 gap-2 pt-1">
+            <MiniStat label="الإجمالي" value={formatAmount(branchReportStats.total)} color="text-emerald-400" />
+            <MiniStat label="العدد" value={branchReportStats.count.toString()} color="text-blue-400" />
+            <MiniStat label="مقبول" value={branchReportStats.approved.toString()} color="text-emerald-400" />
+            <MiniStat label="قيد المراجعة" value={branchReportStats.pending.toString()} color="text-amber-400" />
+          </div>
+        )}
+      </div>
+
       {/* Results summary */}
       {!loading && (
         <div className="flex items-center justify-between">
           <p className="text-slate-400 text-xs">
-            {filtered.length} تحويل {search || statusFilter !== 'all' || bankReport ? '(مفلتر)' : ''}
+            {filtered.length} تحويل {search || statusFilter !== 'all' || bankReport || branchReport ? '(مفلتر)' : ''}
           </p>
           {filtered.length > 0 && (
             <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
