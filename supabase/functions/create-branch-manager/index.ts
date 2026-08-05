@@ -73,7 +73,13 @@ Deno.serve(async (req: Request) => {
       username: cleanUsername,
       full_name: typeof full_name === "string" ? full_name.trim() || null : null,
     });
-    if (insertError) throw insertError;
+    if (insertError) {
+      // Without a branch_managers row this account would be treated as the
+      // super admin (full access) instead of being rejected — never leave
+      // a half-created account behind.
+      await admin.auth.admin.deleteUser(created.user.id).catch(() => {});
+      throw insertError;
+    }
 
     return json({ success: true, username: cleanUsername });
   } catch (err: unknown) {
@@ -82,7 +88,14 @@ Deno.serve(async (req: Request) => {
       message = err.message;
     } else if (err && typeof err === "object" && "message" in err) {
       message = String((err as { message: unknown }).message);
+    } else {
+      try {
+        message = JSON.stringify(err);
+      } catch {
+        message = String(err);
+      }
     }
+    console.error("create-branch-manager error:", err);
     return json({ error: message }, 500);
   }
 });
