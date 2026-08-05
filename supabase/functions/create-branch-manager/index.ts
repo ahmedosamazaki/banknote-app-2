@@ -70,13 +70,19 @@ Deno.serve(async (req: Request) => {
     const { error: insertError } = await admin.from("branch_managers").insert({
       user_id: created.user.id,
       branch_name,
+      username: cleanUsername,
       full_name: typeof full_name === "string" ? full_name.trim() || null : null,
     });
     if (insertError) throw insertError;
 
     return json({ success: true, username: cleanUsername });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "حدث خطأ غير متوقع";
+    let message = "حدث خطأ غير متوقع";
+    if (err instanceof Error) {
+      message = err.message;
+    } else if (err && typeof err === "object" && "message" in err) {
+      message = String((err as { message: unknown }).message);
+    }
     return json({ error: message }, 500);
   }
 });
