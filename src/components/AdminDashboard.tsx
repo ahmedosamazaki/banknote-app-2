@@ -38,6 +38,13 @@ const NAMED_BANKS = ['بنك القاهرة', 'بنك مصر', 'البنك ال�
 const OTHER_BANK = 'أخرى';
 const BANK_OPTIONS = [...NAMED_BANKS, OTHER_BANK];
 
+interface BranchManagerRow {
+  user_id: string;
+  branch_name: string;
+  username: string | null;
+  full_name: string | null;
+}
+
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   approved: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
@@ -61,8 +68,18 @@ export default function AdminDashboard() {
   const [managerBranch, setManagerBranch] = useState<string | null>(null);
   const [checkingManager, setCheckingManager] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [managers, setManagers] = useState<BranchManagerRow[]>([]);
+  const [resetPasswordFor, setResetPasswordFor] = useState<BranchManagerRow | null>(null);
   const isBranchManager = !!managerBranch;
   const PAGE_SIZE = 20;
+
+  const fetchManagers = useCallback(async () => {
+    const { data } = await supabase
+      .from('branch_managers')
+      .select('user_id, branch_name, username, full_name')
+      .order('branch_name', { ascending: true });
+    if (data) setManagers(data as BranchManagerRow[]);
+  }, []);
 
   const fetchTransfers = useCallback(async () => {
     setLoading(true);
@@ -102,8 +119,9 @@ export default function AdminDashboard() {
         .maybeSingle();
       setManagerBranch(row?.branch_name ?? null);
       setCheckingManager(false);
+      if (!row) fetchManagers();
     });
-  }, []);
+  }, [fetchManagers]);
 
   const updateStatus = async (id: string, status: 'approved' | 'rejected') => {
     const confirmMsg =
@@ -372,6 +390,35 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Branch Managers List */}
+      {!checkingManager && !isBranchManager && managers.length > 0 && (
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 space-y-2">
+          <label className="flex items-center gap-1.5 text-slate-300 text-sm font-medium mb-1">
+            <UserPlus className="w-4 h-4 text-emerald-400" />
+            مديرو الفروع
+          </label>
+          {managers.map((m) => (
+            <div
+              key={m.user_id}
+              className="flex items-center justify-between bg-slate-900/50 border border-slate-700/50 rounded-xl px-3 py-2.5"
+            >
+              <div className="min-w-0">
+                <p className="text-white text-sm font-medium truncate">{m.full_name || m.username}</p>
+                <p className="text-slate-500 text-xs mt-0.5">
+                  {m.branch_name} {m.username && `· ${m.username}`}
+                </p>
+              </div>
+              <button
+                onClick={() => setResetPasswordFor(m)}
+                className="flex-shrink-0 text-emerald-400 hover:text-emerald-300 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
+              >
+                تغيير الباسورد
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Bank Report Tool */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 space-y-3">
         <label className="flex items-center gap-1.5 text-slate-300 text-sm font-medium">
@@ -594,7 +641,14 @@ export default function AdminDashboard() {
       {showQrCode && <QrCodeModal onClose={() => setShowQrCode(false)} />}
 
       {/* Create Branch Manager Modal */}
-      {showCreateManager && <CreateManagerModal onClose={() => setShowCreateManager(false)} />}
+      {showCreateManager && (
+        <CreateManagerModal onClose={() => setShowCreateManager(false)} onCreated={fetchManagers} />
+      )}
+
+      {/* Reset Manager Password Modal */}
+      {resetPasswordFor && (
+        <ResetPasswordModal manager={resetPasswordFor} onClose={() => setResetPasswordFor(null)} />
+      )}
     </div>
   );
 }
@@ -931,7 +985,7 @@ function QrCodeModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function CreateManagerModal({ onClose }: { onClose: () => void }) {
+function CreateManagerModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [fullName, setFullName] = useState('');
   const [branchName, setBranchName] = useState('');
   const [username, setUsername] = useState('');
@@ -974,6 +1028,7 @@ function CreateManagerModal({ onClose }: { onClose: () => void }) {
       setBranchName('');
       setUsername('');
       setPassword('');
+      onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
     } finally {
@@ -1073,6 +1128,112 @@ function CreateManagerModal({ onClose }: { onClose: () => void }) {
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
             إنشاء الحساب
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ResetPasswordModal({
+  manager,
+  onClose,
+}: {
+  manager: BranchManagerRow;
+  onClose: () => void;
+}) {
+  const [newPassword, setNewPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setSubmitting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error('انتهت الجلسة، سجّل دخول تاني');
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-manager-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            user_id: manager.user_id,
+            new_password: newPassword,
+          }),
+        }
+      );
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'فشل تغيير كلمة المرور');
+
+      setSuccess('تم تغيير كلمة المرور بنجاح');
+      setNewPassword('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white font-bold text-lg">تغيير كلمة المرور</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <p className="text-slate-400 text-xs mb-4">
+          {manager.full_name || manager.username} — {manager.branch_name}
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-slate-300 text-xs font-medium mb-1.5">كلمة المرور الجديدة</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="6 أحرف على الأقل"
+              required
+              minLength={6}
+              className="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
+            />
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-red-400 text-xs leading-relaxed">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
+              <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <p className="text-emerald-400 text-xs leading-relaxed">{success}</p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 mt-2"
+          >
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            حفظ كلمة المرور
           </button>
         </form>
       </div>
