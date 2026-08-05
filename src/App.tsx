@@ -7,6 +7,7 @@ import AdminDashboard from '@/components/AdminDashboard';
 import MyTransfers from '@/components/MyTransfers';
 import WelcomeScreen from '@/components/WelcomeScreen';
 import { supabase } from '@/lib/supabase';
+import { MANAGER_EMAIL_DOMAIN } from '@/config';
 
 const ADMIN_PATH = '/admin';
 
@@ -59,6 +60,7 @@ function RepView() {
 function AdminView() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [unlocked, setUnlocked] = useState(false);
+  const [username, setUsername] = useState('');
   const [input, setInput] = useState('');
   const [hasError, setHasError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('كلمة المرور غير صحيحة، حاول مجدداً');
@@ -76,24 +78,35 @@ function AdminView() {
     setSubmitting(true);
     setHasError(false);
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-login`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ password: input }),
-        }
-      );
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || 'فشل الدخول');
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: body.access_token,
-        refresh_token: body.refresh_token,
-      });
-      if (sessionError) throw sessionError;
+      if (username.trim()) {
+        // Branch manager login: a real, distinct Supabase Auth account —
+        // sign in directly, no shared-secret dance needed.
+        const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9._-]/g, '');
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: `${cleanUsername}@${MANAGER_EMAIL_DOMAIN}`,
+          password: input,
+        });
+        if (signInError) throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
+      } else {
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-login`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({ password: input }),
+          }
+        );
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || 'فشل الدخول');
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: body.access_token,
+          refresh_token: body.refresh_token,
+        });
+        if (sessionError) throw sessionError;
+      }
       setUnlocked(true);
       setInput('');
     } catch (err) {
@@ -113,6 +126,7 @@ function AdminView() {
   const logout = async () => {
     await supabase.auth.signOut();
     setUnlocked(false);
+    setUsername('');
     goBack();
   };
 
@@ -177,6 +191,23 @@ function AdminView() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  setHasError(false);
+                }}
+                placeholder="اسم المستخدم (اتركه فارغاً للأدمن العام)"
+                autoComplete="username"
+                dir="ltr"
+                className="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors text-center"
+              />
+              <p className="text-slate-500 text-xs text-center mt-1.5">
+                مدير فرع؟ اكتب اسم المستخدم بتاعك هنا
+              </p>
+            </div>
             <input
               type="password"
               value={input}

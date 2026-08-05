@@ -17,17 +17,26 @@ import {
   Download,
   Landmark,
   Building2,
+  User,
   QrCode,
   ShieldAlert,
+  UserPlus,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { supabase, Transfer } from '@/lib/supabase';
+import { BRANCHES } from '@/config';
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'قيد المراجعة',
   approved: 'مقبول',
   rejected: 'مرفوض',
 };
+
+const NAMED_BANKS = ['بنك القاهرة', 'بنك مصر', 'البنك الأهلي المصري', 'بنك الإسكندرية'];
+const OTHER_BANK = 'أخرى';
+const BANK_OPTIONS = [...NAMED_BANKS, OTHER_BANK];
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
@@ -46,7 +55,14 @@ export default function AdminDashboard() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [bankReport, setBankReport] = useState<string>('');
   const [branchReport, setBranchReport] = useState<string>('');
+  const [repReport, setRepReport] = useState<string>('');
   const [showQrCode, setShowQrCode] = useState(false);
+  const [showCreateManager, setShowCreateManager] = useState(false);
+  const [managerBranch, setManagerBranch] = useState<string | null>(null);
+  const [checkingManager, setCheckingManager] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const isBranchManager = !!managerBranch;
+  const PAGE_SIZE = 20;
 
   const fetchTransfers = useCallback(async () => {
     setLoading(true);
@@ -73,25 +89,45 @@ export default function AdminDashboard() {
     };
   }, [fetchTransfers]);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) {
+        setCheckingManager(false);
+        return;
+      }
+      const { data: row } = await supabase
+        .from('branch_managers')
+        .select('branch_name')
+        .eq('user_id', data.user.id)
+        .maybeSingle();
+      setManagerBranch(row?.branch_name ?? null);
+      setCheckingManager(false);
+    });
+  }, []);
+
   const updateStatus = async (id: string, status: 'approved' | 'rejected') => {
+    const confirmMsg =
+      status === 'approved' ? 'متأكد إنك عايز تقبل التحويل ده؟' : 'متأكد إنك عايز ترفض التحويل ده؟';
+    if (!window.confirm(confirmMsg)) return;
+
     setUpdatingId(id);
-    await supabase.from('transfers').update({ status }).eq('id', id);
+    const reviewed_at = new Date().toISOString();
+    await supabase.from('transfers').update({ status, reviewed_at }).eq('id', id);
     setTransfers((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status } : t))
+      prev.map((t) => (t.id === id ? { ...t, status, reviewed_at } : t))
     );
     if (selectedTransfer?.id === id) {
-      setSelectedTransfer((prev) => (prev ? { ...prev, status } : prev));
+      setSelectedTransfer((prev) => (prev ? { ...prev, status, reviewed_at } : prev));
     }
     setUpdatingId(null);
   };
 
-  const uniqueBanks = useMemo(
-    () =>
-      Array.from(new Set(transfers.map((t) => t.bank_name).filter((b): b is string => !!b?.trim()))).sort(
-        (a, b) => a.localeCompare(b, 'ar')
-      ),
-    [transfers]
-  );
+  const matchesBankOption = (bankName: string | null, option: string) => {
+    if (!option) return true;
+    const name = (bankName || '').trim();
+    if (option === OTHER_BANK) return !!name && !NAMED_BANKS.includes(name);
+    return name === option;
+  };
 
   const uniqueBranches = useMemo(
     () =>
@@ -100,6 +136,17 @@ export default function AdminDashboard() {
       ),
     [transfers]
   );
+
+  const uniqueReps = useMemo(
+    () =>
+      Array.from(new Set(transfers.map((t) => t.representative_name).filter((b): b is string => !!b?.trim()))).sort(
+        (a, b) => a.localeCompare(b, 'ar')
+      ),
+    [transfers]
+  );
+
+  const matchesRep = (repName: string, query: string) =>
+    !query.trim() || repName.toLowerCase().includes(query.trim().toLowerCase());
 
   const filtered = transfers.filter((t) => {
     const q = search.toLowerCase();
@@ -112,17 +159,26 @@ export default function AdminDashboard() {
       (t.bank_name || '').toLowerCase().includes(q);
     const matchStatus = statusFilter === 'all' || t.status === statusFilter;
     const matchType = typeFilter === 'all' || t.transfer_type === typeFilter;
-    const matchBank = !bankReport || t.bank_name === bankReport;
+    const matchBank = matchesBankOption(t.bank_name, bankReport);
     const matchBranch = !branchReport || t.branch_name === branchReport;
-    return matchSearch && matchStatus && matchType && matchBank && matchBranch;
+    const matchRep = matchesRep(t.representative_name, repReport);
+    return matchSearch && matchStatus && matchType && matchBank && matchBranch && matchRep;
   });
 
   const totalAmount = filtered.reduce((s, t) => s + Number(t.transfer_amount), 0);
   const pendingCount = transfers.filter((t) => t.status === 'pending').length;
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageSafe = Math.min(currentPage, totalPages);
+  const paginated = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, typeFilter, bankReport, branchReport, repReport]);
+
   const bankReportStats = useMemo(() => {
     if (!bankReport) return null;
-    const rows = transfers.filter((t) => t.bank_name === bankReport);
+    const rows = transfers.filter((t) => matchesBankOption(t.bank_name, bankReport));
     return {
       count: rows.length,
       total: rows.reduce((s, t) => s + Number(t.transfer_amount), 0),
@@ -143,6 +199,23 @@ export default function AdminDashboard() {
       rejected: rows.filter((t) => t.status === 'rejected').length,
     };
   }, [transfers, branchReport]);
+
+  const repReportRows = useMemo(
+    () => (repReport.trim() ? transfers.filter((t) => matchesRep(t.representative_name, repReport)) : []),
+    [transfers, repReport]
+  );
+
+  const repReportStats = useMemo(() => {
+    if (!repReport.trim()) return null;
+    const rows = repReportRows;
+    return {
+      count: rows.length,
+      total: rows.reduce((s, t) => s + Number(t.transfer_amount), 0),
+      pending: rows.filter((t) => t.status === 'pending').length,
+      approved: rows.filter((t) => t.status === 'approved').length,
+      rejected: rows.filter((t) => t.status === 'rejected').length,
+    };
+  }, [repReportRows, repReport]);
 
   const exportCsv = () => {
     if (filtered.length === 0) return;
@@ -202,6 +275,15 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-4 space-y-5">
+      {isBranchManager && (
+        <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-2.5">
+          <Building2 className="w-4 h-4 text-blue-400 flex-shrink-0" />
+          <p className="text-blue-300 text-sm">
+            أنت مسجّل دخول كمدير فرع <span className="font-semibold">{managerBranch}</span> — تشوف تحويلات فرعك بس
+          </p>
+        </div>
+      )}
+
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard
@@ -278,6 +360,15 @@ export default function AdminDashboard() {
           >
             <QrCode className="w-4 h-4" />
           </button>
+          {!checkingManager && !isBranchManager && (
+            <button
+              onClick={() => setShowCreateManager(true)}
+              title="إنشاء حساب مدير فرع"
+              className="flex items-center gap-1.5 bg-slate-800 border border-slate-700 hover:border-emerald-600/50 hover:text-emerald-400 text-slate-300 rounded-xl px-3 py-2 text-sm transition-colors duration-200"
+            >
+              <UserPlus className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -294,7 +385,7 @@ export default function AdminDashboard() {
             className="w-full appearance-none bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
           >
             <option value="">اختر بنك / جهة لعرض تقريرها...</option>
-            {uniqueBanks.map((b) => (
+            {BANK_OPTIONS.map((b) => (
               <option key={b} value={b}>
                 {b}
               </option>
@@ -313,34 +404,69 @@ export default function AdminDashboard() {
         )}
       </div>
 
-      {/* Branch Report Tool */}
+      {/* Branch Report Tool (redundant for a branch-scoped manager) */}
+      {!isBranchManager && (
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 space-y-3">
+          <label className="flex items-center gap-1.5 text-slate-300 text-sm font-medium">
+            <Building2 className="w-4 h-4 text-emerald-400" />
+            تقرير تحويلات فرع معيّن
+          </label>
+          <div className="relative">
+            <select
+              value={branchReport}
+              onChange={(e) => setBranchReport(e.target.value)}
+              className="w-full appearance-none bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
+            >
+              <option value="">اختر فرع لعرض تقريره...</option>
+              {uniqueBranches.map((b) => (
+                <option key={b} value={b}>
+                  {b}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          </div>
+
+          {branchReportStats && (
+            <div className="grid grid-cols-4 gap-2 pt-1">
+              <MiniStat label="الإجمالي" value={formatAmount(branchReportStats.total)} color="text-emerald-400" />
+              <MiniStat label="العدد" value={branchReportStats.count.toString()} color="text-blue-400" />
+              <MiniStat label="مقبول" value={branchReportStats.approved.toString()} color="text-emerald-400" />
+              <MiniStat label="قيد المراجعة" value={branchReportStats.pending.toString()} color="text-amber-400" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Rep Report Tool */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 space-y-3">
         <label className="flex items-center gap-1.5 text-slate-300 text-sm font-medium">
-          <Building2 className="w-4 h-4 text-emerald-400" />
-          تقرير تحويلات فرع معيّن
+          <User className="w-4 h-4 text-emerald-400" />
+          تقرير تحويلات مندوب معيّن
         </label>
         <div className="relative">
-          <select
-            value={branchReport}
-            onChange={(e) => setBranchReport(e.target.value)}
-            className="w-full appearance-none bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
-          >
-            <option value="">اختر فرع لعرض تقريره...</option>
-            {uniqueBranches.map((b) => (
-              <option key={b} value={b}>
-                {b}
-              </option>
+          <input
+            type="text"
+            list="rep-names"
+            value={repReport}
+            onChange={(e) => setRepReport(e.target.value)}
+            placeholder="اكتب اسم المندوب..."
+            className="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white placeholder-slate-500 rounded-xl pr-4 pl-9 py-2.5 text-sm outline-none transition-colors duration-200"
+          />
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <datalist id="rep-names">
+            {uniqueReps.map((r) => (
+              <option key={r} value={r} />
             ))}
-          </select>
-          <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          </datalist>
         </div>
 
-        {branchReportStats && (
+        {repReportStats && (
           <div className="grid grid-cols-4 gap-2 pt-1">
-            <MiniStat label="الإجمالي" value={formatAmount(branchReportStats.total)} color="text-emerald-400" />
-            <MiniStat label="العدد" value={branchReportStats.count.toString()} color="text-blue-400" />
-            <MiniStat label="مقبول" value={branchReportStats.approved.toString()} color="text-emerald-400" />
-            <MiniStat label="قيد المراجعة" value={branchReportStats.pending.toString()} color="text-amber-400" />
+            <MiniStat label="الإجمالي" value={formatAmount(repReportStats.total)} color="text-emerald-400" />
+            <MiniStat label="العدد" value={repReportStats.count.toString()} color="text-blue-400" />
+            <MiniStat label="مقبول" value={repReportStats.approved.toString()} color="text-emerald-400" />
+            <MiniStat label="قيد المراجعة" value={repReportStats.pending.toString()} color="text-amber-400" />
           </div>
         )}
       </div>
@@ -349,7 +475,7 @@ export default function AdminDashboard() {
       {!loading && (
         <div className="flex items-center justify-between">
           <p className="text-slate-400 text-xs">
-            {filtered.length} تحويل {search || statusFilter !== 'all' || bankReport || branchReport ? '(مفلتر)' : ''}
+            {filtered.length} تحويل {search || statusFilter !== 'all' || bankReport || branchReport || repReport ? '(مفلتر)' : ''}
           </p>
           {filtered.length > 0 && (
             <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
@@ -383,21 +509,46 @@ export default function AdminDashboard() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((t) => (
-            <TransferCard
-              key={t.id}
-              transfer={t}
-              onView={() => setSelectedTransfer(t)}
-              onViewImage={() => t.receipt_image_url && setLightboxUrl(t.receipt_image_url)}
-              onApprove={() => updateStatus(t.id, 'approved')}
-              onReject={() => updateStatus(t.id, 'rejected')}
-              isUpdating={updatingId === t.id}
-              formatAmount={formatAmount}
-              formatDate={formatDate}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {paginated.map((t) => (
+              <TransferCard
+                key={t.id}
+                transfer={t}
+                onView={() => setSelectedTransfer(t)}
+                onViewImage={() => t.receipt_image_url && setLightboxUrl(t.receipt_image_url)}
+                onApprove={() => updateStatus(t.id, 'approved')}
+                onReject={() => updateStatus(t.id, 'rejected')}
+                isUpdating={updatingId === t.id}
+                readOnly={isBranchManager}
+                formatAmount={formatAmount}
+                formatDate={formatDate}
+              />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 pt-1">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={pageSafe <= 1}
+                className="bg-slate-800 border border-slate-700 hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-xl px-3 py-2 text-xs transition-colors duration-200"
+              >
+                السابق
+              </button>
+              <span className="text-slate-400 text-xs">
+                صفحة {pageSafe} من {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={pageSafe >= totalPages}
+                className="bg-slate-800 border border-slate-700 hover:border-slate-600 disabled:opacity-40 disabled:cursor-not-allowed text-slate-300 rounded-xl px-3 py-2 text-xs transition-colors duration-200"
+              >
+                التالي
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Detail Modal */}
@@ -408,6 +559,7 @@ export default function AdminDashboard() {
           onApprove={() => updateStatus(selectedTransfer.id, 'approved')}
           onReject={() => updateStatus(selectedTransfer.id, 'rejected')}
           isUpdating={updatingId === selectedTransfer.id}
+          readOnly={isBranchManager}
           onViewImage={() =>
             selectedTransfer.receipt_image_url &&
             setLightboxUrl(selectedTransfer.receipt_image_url)
@@ -440,6 +592,9 @@ export default function AdminDashboard() {
 
       {/* QR Code Modal */}
       {showQrCode && <QrCodeModal onClose={() => setShowQrCode(false)} />}
+
+      {/* Create Branch Manager Modal */}
+      {showCreateManager && <CreateManagerModal onClose={() => setShowCreateManager(false)} />}
     </div>
   );
 }
@@ -451,6 +606,7 @@ function TransferCard({
   onApprove,
   onReject,
   isUpdating,
+  readOnly,
   formatAmount,
   formatDate,
 }: {
@@ -460,6 +616,7 @@ function TransferCard({
   onApprove: () => void;
   onReject: () => void;
   isUpdating: boolean;
+  readOnly?: boolean;
   formatAmount: (n: number) => string;
   formatDate: (s: string) => string;
 }) {
@@ -519,7 +676,7 @@ function TransferCard({
             الإيصال
           </button>
         )}
-        {t.status === 'pending' && (
+        {t.status === 'pending' && !readOnly && (
           <>
             <button
               onClick={onApprove}
@@ -550,6 +707,7 @@ function DetailModal({
   onApprove,
   onReject,
   isUpdating,
+  readOnly,
   onViewImage,
   formatAmount,
   formatDate,
@@ -559,6 +717,7 @@ function DetailModal({
   onApprove: () => void;
   onReject: () => void;
   isUpdating: boolean;
+  readOnly?: boolean;
   onViewImage: () => void;
   formatAmount: (n: number) => string;
   formatDate: (s: string) => string;
@@ -625,6 +784,12 @@ function DetailModal({
             {t.transfer_date && <DetailRow label="تاريخ التحويل" value={t.transfer_date} />}
             {t.notes && <DetailRow label="ملاحظات" value={t.notes} />}
             <DetailRow label="تاريخ الإرسال" value={formatDate(t.created_at)} />
+            {t.reviewed_at && (
+              <DetailRow
+                label={t.status === 'approved' ? 'تاريخ القبول' : 'تاريخ الرفض'}
+                value={formatDate(t.reviewed_at)}
+              />
+            )}
           </div>
 
           {/* Receipt image */}
@@ -646,7 +811,7 @@ function DetailModal({
           )}
 
           {/* Actions */}
-          {t.status === 'pending' && (
+          {t.status === 'pending' && !readOnly && (
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 onClick={onApprove}
@@ -761,6 +926,155 @@ function QrCodeModal({ onClose }: { onClose: () => void }) {
             إغلاق
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CreateManagerModal({ onClose }: { onClose: () => void }) {
+  const [fullName, setFullName] = useState('');
+  const [branchName, setBranchName] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setSubmitting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error('انتهت الجلسة، سجّل دخول تاني');
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-branch-manager`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            username: username.trim(),
+            password,
+            branch_name: branchName,
+            full_name: fullName.trim(),
+          }),
+        }
+      );
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || 'فشل إنشاء الحساب');
+
+      setSuccess(`تم إنشاء الحساب بنجاح — اسم المستخدم: ${body.username}`);
+      setFullName('');
+      setBranchName('');
+      setUsername('');
+      setPassword('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white font-bold text-lg">إنشاء حساب مدير فرع</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-slate-300 text-xs font-medium mb-1.5">اسم المدير</label>
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="اسم مدير الفرع"
+              required
+              className="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-xs font-medium mb-1.5">الفرع</label>
+            <div className="relative">
+              <select
+                value={branchName}
+                onChange={(e) => setBranchName(e.target.value)}
+                required
+                className="w-full appearance-none bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
+              >
+                <option value="">اختر الفرع</option>
+                {BRANCHES.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-xs font-medium mb-1.5">اسم المستخدم</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="مثال: haram_manager"
+              dir="ltr"
+              required
+              className="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
+            />
+          </div>
+
+          <div>
+            <label className="block text-slate-300 text-xs font-medium mb-1.5">كلمة المرور</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="6 أحرف على الأقل"
+              required
+              minLength={6}
+              className="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
+            />
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <p className="text-red-400 text-xs leading-relaxed">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div className="flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
+              <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+              <p className="text-emerald-400 text-xs leading-relaxed">{success}</p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 mt-2"
+          >
+            {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+            إنشاء الحساب
+          </button>
+        </form>
       </div>
     </div>
   );

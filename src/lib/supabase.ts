@@ -25,5 +25,6 @@ export interface Transfer {
   ai_verified: boolean;
   ai_flagged: boolean;
   ai_flag_reason: string | null;
+  reviewed_at: string | null;
   created_at: string;
 }

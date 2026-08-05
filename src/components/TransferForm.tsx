@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { verifyReceiptWithAI, ReceiptVerification } from '@/lib/ocr';
+import { BRANCHES } from '@/config';
 
 interface FormData {
   representative_name: string;
@@ -48,26 +49,48 @@ const INITIAL_FORM: FormData = {
   notes: '',
 };
 
+const REMEMBERED_REP_KEY = 'banknote_rep_info';
+
+interface RememberedRep {
+  representative_name: string;
+  sender_phone: string;
+  branch_name: string;
+}
+
+function loadRememberedRep(): RememberedRep {
+  const empty: RememberedRep = { representative_name: '', sender_phone: '', branch_name: '' };
+  try {
+    const raw = localStorage.getItem(REMEMBERED_REP_KEY);
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw);
+    return {
+      representative_name: typeof parsed.representative_name === 'string' ? parsed.representative_name : '',
+      sender_phone: typeof parsed.sender_phone === 'string' ? parsed.sender_phone : '',
+      branch_name: typeof parsed.branch_name === 'string' ? parsed.branch_name : '',
+    };
+  } catch {
+    return empty;
+  }
+}
+
+function getInitialForm(): FormData {
+  return { ...INITIAL_FORM, ...loadRememberedRep() };
+}
+
+function rememberRep(info: RememberedRep) {
+  try {
+    localStorage.setItem(REMEMBERED_REP_KEY, JSON.stringify(info));
+  } catch {
+    // Storage unavailable (private browsing, etc.) — not critical
+  }
+}
+
 const WALLET_PROVIDERS = ['فودافون كاش', 'اتصالات كاش', 'أورنج كاش'];
 const OTHER_WALLET = 'محفظة أخرى';
-
-const BRANCHES = [
-  'الهرم',
-  'التجمع',
-  'مدينة نصر',
-  'الفسطاط',
-  'أبو رواش',
-  'زهراء مدينة نصر',
-  'إمبابة',
-  'مسطرد',
-  'المعادي',
-  'القومية',
-  'بولاق',
-  'البراجيل',
-];
+const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/;
 
 export default function TransferForm() {
-  const [form, setForm] = useState<FormData>(INITIAL_FORM);
+  const [form, setForm] = useState<FormData>(getInitialForm);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -77,6 +100,7 @@ export default function TransferForm() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [receiptError, setReceiptError] = useState<string | null>(null);
   const [otherWalletMode, setOtherWalletMode] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -90,6 +114,7 @@ export default function TransferForm() {
     const file = e.target.files?.[0];
     if (!file) return;
     setReceiptFile(file);
+    setReceiptError(null);
     setOcrDone(false);
     setAiResult(null);
 
@@ -130,12 +155,18 @@ export default function TransferForm() {
     if (!form.branch_name.trim()) newErrors.branch_name = 'الفرع مطلوب';
     if (!form.transfer_amount || isNaN(Number(form.transfer_amount)) || Number(form.transfer_amount) <= 0)
       newErrors.transfer_amount = 'أدخل مبلغاً صحيحاً';
-    if (!form.sender_phone.trim() || form.sender_phone.replace(/\D/g, '').length < 10)
-      newErrors.sender_phone = 'رقم الهاتف غير صحيح';
+    if (!EGYPT_PHONE_REGEX.test(form.sender_phone.replace(/\D/g, '')))
+      newErrors.sender_phone = 'أدخل رقم موبايل مصري صحيح (01 ثم 10 أرقام)';
     if (form.transfer_type === 'vodafone_cash' && !form.wallet_provider.trim())
       newErrors.wallet_provider = 'اختر المحفظة';
+    if (!form.reference_number.trim()) newErrors.reference_number = 'رقم العملية مطلوب';
+    if (!form.bank_name.trim()) newErrors.bank_name = 'اسم البنك مطلوب';
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    const receiptOk = !!receiptFile;
+    setReceiptError(receiptOk ? null : 'صورة الإيصال مطلوبة');
+
+    return Object.keys(newErrors).length === 0 && receiptOk;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -217,8 +248,14 @@ export default function TransferForm() {
         // Silently ignore — Supabase is the source of truth
       }
 
+      rememberRep({
+        representative_name: newTransfer.representative_name,
+        sender_phone: newTransfer.sender_phone,
+        branch_name: newTransfer.branch_name,
+      });
+
       setSubmitted(true);
-      setForm(INITIAL_FORM);
+      setForm(getInitialForm());
       setReceiptFile(null);
       setReceiptPreview(null);
       setOcrDone(false);
@@ -351,8 +388,7 @@ export default function TransferForm() {
       {/* Receipt Upload & OCR */}
       <div>
         <label className="block text-slate-300 text-sm font-medium mb-2">
-          إيصال التحويل{' '}
-          <span className="text-slate-500 font-normal">(اختياري - للمسح الضوئي)</span>
+          إيصال التحويل <span className="text-red-400">*</span>
         </label>
         {!receiptPreview ? (
           <div className="grid grid-cols-2 gap-3">
@@ -448,6 +484,12 @@ export default function TransferForm() {
             </p>
           </div>
         )}
+        {receiptError && (
+          <p className="mt-1.5 text-red-400 text-xs flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            {receiptError}
+          </p>
+        )}
       </div>
 
       {/* Representative Name */}
@@ -529,6 +571,7 @@ export default function TransferForm() {
       <FormField
         label="رقم العملية / المرجع"
         icon={<Hash className="w-4 h-4" />}
+        error={errors.reference_number}
       >
         <input
           type="text"
@@ -536,19 +579,19 @@ export default function TransferForm() {
           value={form.reference_number}
           onChange={(e) => set('reference_number', e.target.value)}
           placeholder="أدخل رقم المرجع"
-          className={inputClass(false)}
+          className={inputClass(!!errors.reference_number)}
           dir="ltr"
         />
       </FormField>
 
       {/* Bank Name */}
-      <FormField label="اسم البنك / الجهة" icon={<CreditCard className="w-4 h-4" />}>
+      <FormField label="اسم البنك / الجهة" icon={<CreditCard className="w-4 h-4" />} error={errors.bank_name}>
         <input
           type="text"
           value={form.bank_name}
           onChange={(e) => set('bank_name', e.target.value)}
           placeholder="مثال: بنك مصر، فودافون كاش"
-          className={inputClass(false)}
+          className={inputClass(!!errors.bank_name)}
         />
       </FormField>
 

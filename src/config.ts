@@ -5,3 +5,20 @@ export const COMPANY_ABOUT =
 export const COMPANY_LOGO_URL = '/logo.jpg';
 export const SUPPORT_WHATSAPP_NUMBER = '201015888999';
 export const SUPPORT_WHATSAPP_URL = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}`;
+
+export const BRANCHES = [
+  'الهرم',
+  'التجمع',
+  'مدينة نصر',
+  'الفسطاط',
+  'أبو رواش',
+  'زهراء مدينة نصر',
+  'إمبابة',
+  'مسطرد',
+  'المعادي',
+  'القومية',
+  'بولاق',
+  'البراجيل',
+];
+
+export const MANAGER_EMAIL_DOMAIN = 'banknote-manager.internal';
