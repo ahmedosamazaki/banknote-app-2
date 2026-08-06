@@ -1,11 +1,11 @@
 const MAX_DIMENSION = 1600;
-const JPEG_QUALITY = 0.8;
+const JPEG_QUALITY = 0.75;
 
-// Downscales + re-encodes a receipt photo as JPEG before upload so a
-// multi-MB camera shot doesn't eat into the free storage quota.
-export async function compressImage(file: File): Promise<File> {
-  if (!file.type.startsWith('image/')) return file;
-
+// Receipts are photos straight from a phone camera (often 3000px+, several
+// MB each). Reps submit a lot of these against a free Supabase Storage
+// tier, so every upload is downscaled and re-encoded as JPEG before it
+// leaves the device. A receipt only needs to stay legible, not print-res.
+export async function compressReceiptImage(file: File): Promise<File> {
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
@@ -20,14 +20,16 @@ export async function compressImage(file: File): Promise<File> {
     ctx.drawImage(bitmap, 0, 0, width, height);
     bitmap.close();
 
-    const blob = await new Promise<Blob | null>((resolve) =>
+    const blob: Blob | null = await new Promise((resolve) =>
       canvas.toBlob(resolve, 'image/jpeg', JPEG_QUALITY)
     );
     if (!blob || blob.size >= file.size) return file;
 
-    const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
-    return new File([blob], newName, { type: 'image/jpeg' });
+    const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+    return new File([blob], name, { type: 'image/jpeg' });
   } catch {
+    // Unsupported format or decode failure — upload the original rather
+    // than block the submission.
     return file;
   }
 }
