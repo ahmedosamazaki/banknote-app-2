@@ -6,7 +6,6 @@
 
 :root {
   font-family: 'Cairo', sans-serif;
-  color-scheme: dark;
 }
 
 * {
@@ -14,7 +13,6 @@
 }
 
 body {
-  background-color: #020617;
   overscroll-behavior: none;
 }
 
@@ -28,11 +26,17 @@ html {
   width: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #e2e8f0;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #cbd5e1;
   border-radius: 2px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
 }
 
 /* Remove number input spinners */
