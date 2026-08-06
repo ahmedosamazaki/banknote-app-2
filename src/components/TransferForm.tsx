@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   User,
   Building2,
@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { verifyReceiptWithAI, ReceiptVerification } from '@/lib/ocr';
-import { compressImage } from '@/lib/image';
+import { compressReceiptImage } from '@/lib/image';
 import { BRANCHES } from '@/config';
 
 interface FormData {
@@ -111,14 +111,13 @@ export default function TransferForm() {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawFile = e.target.files?.[0];
-    if (!rawFile) return;
-    const file = await compressImage(rawFile);
-    setReceiptFile(file);
+  const processReceiptFile = async (rawFile: File) => {
     setReceiptError(null);
     setOcrDone(false);
     setAiResult(null);
+
+    const file = await compressReceiptImage(rawFile);
+    setReceiptFile(file);
 
     const url = URL.createObjectURL(file);
     setReceiptPreview(url);
@@ -140,6 +139,45 @@ export default function TransferForm() {
       setOcrLoading(false);
     }
   };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
+    await processReceiptFile(rawFile);
+  };
+
+  // Picks up an image shared from another app (e.g. WhatsApp's "Share"
+  // sheet) via the PWA share_target — the service worker (public/sw.js)
+  // stashes the file in Cache Storage and redirects here with ?shared=1.
+  useEffect(() => {
+    if (!window.location.search.includes('shared=1')) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const cache = await caches.open('banknote-share-target');
+        const match = await cache.match('/shared-receipt');
+        if (match && !cancelled) {
+          const blob = await match.blob();
+          const file = new File([blob], `whatsapp-receipt.${blob.type.split('/')[1] || 'jpg'}`, {
+            type: blob.type || 'image/jpeg',
+          });
+          await processReceiptFile(file);
+        }
+        await cache.delete('/shared-receipt');
+      } catch {
+        // Cache Storage unsupported or empty — nothing to load
+      } finally {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const removeReceipt = () => {
     setReceiptFile(null);
@@ -175,13 +213,10 @@ export default function TransferForm() {
     e.preventDefault();
     setError(null);
     if (!validate()) return;
-    if (aiResult?.isSuspicious) {
-      setError(
-        aiResult.suspicionReason ||
-          'الإيصال يبدو مشتبهاً به ولا يمكن إرسال التحويل به. غيّر الصورة أو تواصل مع الدعم الفني.'
-      );
-      return;
-    }
+    // AI suspicion no longer blocks submission — a real photo of a receipt
+    // (camera shot, glare, angle) can trip the model even when it's
+    // genuine. The flag still travels with the transfer (ai_flagged /
+    // ai_flag_reason below) so the admin sees it and makes the actual call.
     setSubmitting(true);
 
     try {
@@ -282,8 +317,8 @@ export default function TransferForm() {
         <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 animate-scale-in">
           <CheckCircle className="w-12 h-12 text-emerald-500" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">تم الإرسال بنجاح!</h2>
-        <p className="text-slate-400 mb-8 leading-relaxed">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">تم الإرسال بنجاح!</h2>
+        <p className="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
           تم تسجيل التحويل وسيتم مراجعته من قِبل الإدارة.
         </p>
         <button
@@ -300,7 +335,7 @@ export default function TransferForm() {
     <form onSubmit={handleSubmit} className="space-y-5 p-4" noValidate>
       {/* Transfer Type Toggle */}
       <div>
-        <label className="block text-slate-300 text-sm font-medium mb-2">
+        <label className="block text-slate-600 dark:text-slate-300 text-sm font-medium mb-2">
           نوع التحويل
         </label>
         <div className="grid grid-cols-2 gap-2">
@@ -313,8 +348,8 @@ export default function TransferForm() {
             }}
             className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-medium text-sm transition-all duration-200 ${
               form.transfer_type === 'instapay'
-                ? 'border-blue-500 bg-blue-500/15 text-blue-400'
-                : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
+                ? 'border-blue-500 bg-blue-500/15 text-blue-600 dark:text-blue-400'
+                : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
             }`}
           >
             <CreditCard className="w-4 h-4" />
@@ -325,8 +360,8 @@ export default function TransferForm() {
             onClick={() => set('transfer_type', 'vodafone_cash')}
             className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-medium text-sm transition-all duration-200 ${
               form.transfer_type === 'vodafone_cash'
-                ? 'border-red-500 bg-red-500/15 text-red-400'
-                : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
+                ? 'border-red-500 bg-red-500/15 text-red-600 dark:text-red-400'
+                : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
             }`}
           >
             <Smartphone className="w-4 h-4" />
@@ -353,8 +388,8 @@ export default function TransferForm() {
                 }}
                 className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                   !otherWalletMode && form.wallet_provider === w
-                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
-                    : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
+                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
                 }`}
               >
                 {w}
@@ -368,8 +403,8 @@ export default function TransferForm() {
               }}
               className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                 otherWalletMode
-                  ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
-                  : 'border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600'
+                  ? 'border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                  : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
               }`}
             >
               {OTHER_WALLET}
@@ -389,22 +424,22 @@ export default function TransferForm() {
 
       {/* Receipt Upload & OCR */}
       <div>
-        <label className="block text-slate-300 text-sm font-medium mb-2">
-          إيصال التحويل <span className="text-red-400">*</span>
+        <label className="block text-slate-600 dark:text-slate-300 text-sm font-medium mb-2">
+          إيصال التحويل <span className="text-red-500 dark:text-red-400">*</span>
         </label>
         {!receiptPreview ? (
           <div className="grid grid-cols-2 gap-3">
             {/* Camera button */}
             <label
               htmlFor="receipt-camera"
-              className="flex flex-col items-center justify-center gap-2.5 border-2 border-dashed border-slate-700 hover:border-emerald-500/50 bg-slate-800/30 hover:bg-emerald-500/5 rounded-xl py-5 px-3 cursor-pointer transition-all duration-200 group"
+              className="flex flex-col items-center justify-center gap-2.5 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500/50 bg-slate-50 dark:bg-slate-800/30 hover:bg-emerald-500/5 rounded-xl py-5 px-3 cursor-pointer transition-all duration-200 group"
             >
-              <div className="w-11 h-11 bg-slate-700/50 group-hover:bg-emerald-500/10 rounded-full flex items-center justify-center transition-colors duration-200">
-                <Camera className="w-5 h-5 text-slate-400 group-hover:text-emerald-400 transition-colors duration-200" />
+              <div className="w-11 h-11 bg-slate-200 dark:bg-slate-700/50 group-hover:bg-emerald-500/10 rounded-full flex items-center justify-center transition-colors duration-200">
+                <Camera className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors duration-200" />
               </div>
               <div className="text-center">
-                <p className="text-slate-300 font-medium text-xs">تصوير الإيصال</p>
-                <p className="text-slate-500 text-xs mt-0.5">فتح الكاميرا</p>
+                <p className="text-slate-600 dark:text-slate-300 font-medium text-xs">تصوير الإيصال</p>
+                <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">فتح الكاميرا</p>
               </div>
               <input
                 id="receipt-camera"
@@ -420,14 +455,14 @@ export default function TransferForm() {
             {/* Gallery button */}
             <label
               htmlFor="receipt-gallery"
-              className="flex flex-col items-center justify-center gap-2.5 border-2 border-dashed border-slate-700 hover:border-blue-500/50 bg-slate-800/30 hover:bg-blue-500/5 rounded-xl py-5 px-3 cursor-pointer transition-all duration-200 group"
+              className="flex flex-col items-center justify-center gap-2.5 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500/50 bg-slate-50 dark:bg-slate-800/30 hover:bg-blue-500/5 rounded-xl py-5 px-3 cursor-pointer transition-all duration-200 group"
             >
-              <div className="w-11 h-11 bg-slate-700/50 group-hover:bg-blue-500/10 rounded-full flex items-center justify-center transition-colors duration-200">
-                <Images className="w-5 h-5 text-slate-400 group-hover:text-blue-400 transition-colors duration-200" />
+              <div className="w-11 h-11 bg-slate-200 dark:bg-slate-700/50 group-hover:bg-blue-500/10 rounded-full flex items-center justify-center transition-colors duration-200">
+                <Images className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors duration-200" />
               </div>
               <div className="text-center">
-                <p className="text-slate-300 font-medium text-xs">اختيار من المعرض</p>
-                <p className="text-slate-500 text-xs mt-0.5">الصور المحفوظة</p>
+                <p className="text-slate-600 dark:text-slate-300 font-medium text-xs">اختيار من المعرض</p>
+                <p className="text-slate-400 dark:text-slate-500 text-xs mt-0.5">الصور المحفوظة</p>
               </div>
               <input
                 id="receipt-gallery"
@@ -440,7 +475,7 @@ export default function TransferForm() {
             </label>
           </div>
         ) : (
-          <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800/50">
+          <div className="relative rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50">
             <img
               src={receiptPreview}
               alt="إيصال التحويل"
@@ -449,7 +484,7 @@ export default function TransferForm() {
             <button
               type="button"
               onClick={removeReceipt}
-              className="absolute top-2 left-2 w-7 h-7 bg-slate-900/80 hover:bg-red-500/80 rounded-full flex items-center justify-center transition-colors duration-200"
+              className="absolute top-2 left-2 w-7 h-7 bg-slate-900/70 hover:bg-red-500/80 rounded-full flex items-center justify-center transition-colors duration-200"
             >
               <X className="w-4 h-4 text-white" />
             </button>
@@ -466,7 +501,7 @@ export default function TransferForm() {
               <div className="absolute bottom-0 inset-x-0 bg-red-500/90 px-3 py-2 flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-white flex-shrink-0" />
                 <span className="text-white text-xs font-medium">
-                  الإيصال يبدو مشتبهاً به — لا يمكن إرسال التحويل
+                  الإيصال يحتاج مراجعة من الإدارة قبل القبول
                 </span>
               </div>
             )}
@@ -480,14 +515,14 @@ export default function TransferForm() {
         )}
         {aiResult?.isSuspicious && (
           <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 rounded-xl p-3.5 mt-2">
-            <ShieldAlert className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-red-400 text-sm leading-relaxed">
-              {aiResult.suspicionReason || 'الإيصال يبدو معدّلاً أو غير حقيقي، رجاءً ارفع صورة أخرى أو تواصل مع الدعم الفني.'}
+            <ShieldAlert className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-red-600 dark:text-red-400 text-sm leading-relaxed">
+              {aiResult.suspicionReason || 'الصورة شكلها غير معتاد (زاوية، إضاءة..). تقدر تبعتها عادي، وهتترفع للإدارة تراجعها.'}
             </p>
           </div>
         )}
         {receiptError && (
-          <p className="mt-1.5 text-red-400 text-xs flex items-center gap-1">
+          <p className="mt-1.5 text-red-500 dark:text-red-400 text-xs flex items-center gap-1">
             <AlertCircle className="w-3 h-3" />
             {receiptError}
           </p>
@@ -610,14 +645,14 @@ export default function TransferForm() {
 
       {error && (
         <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 rounded-xl p-3.5">
-          <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-          <p className="text-red-400 text-sm leading-relaxed">{error}</p>
+          <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-red-600 dark:text-red-400 text-sm leading-relaxed">{error}</p>
         </div>
       )}
 
       <button
         type="submit"
-        disabled={submitting || !!aiResult?.isSuspicious}
+        disabled={submitting}
         className="w-full bg-gradient-to-l from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:from-emerald-600 active:to-teal-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/20 transition-all duration-200 text-base"
       >
         {submitting ? (
@@ -649,13 +684,13 @@ function FormField({
 }) {
   return (
     <div>
-      <label className="flex items-center gap-1.5 text-slate-300 text-sm font-medium mb-2">
-        <span className="text-slate-400">{icon}</span>
+      <label className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 text-sm font-medium mb-2">
+        <span className="text-slate-500 dark:text-slate-400">{icon}</span>
         {label}
       </label>
       {children}
       {error && (
-        <p className="mt-1.5 text-red-400 text-xs flex items-center gap-1">
+        <p className="mt-1.5 text-red-500 dark:text-red-400 text-xs flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
           {error}
         </p>
@@ -665,7 +700,7 @@ function FormField({
 }
 
 function inputClass(hasError: boolean) {
-  return `w-full bg-slate-800/60 border ${
-    hasError ? 'border-red-500/60 focus:border-red-500' : 'border-slate-700 focus:border-emerald-500'
-  } text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-200 focus:bg-slate-800`;
+  return `w-full bg-slate-50 dark:bg-slate-800/60 border ${
+    hasError ? 'border-red-500/60 focus:border-red-500' : 'border-slate-300 dark:border-slate-700 focus:border-emerald-500'
+  } text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-200 focus:bg-white dark:focus:bg-slate-800`;
 }
