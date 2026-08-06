@@ -130,14 +130,20 @@ export default function AdminDashboard() {
 
     setUpdatingId(id);
     const reviewed_at = new Date().toISOString();
-    await supabase.from('transfers').update({ status, reviewed_at }).eq('id', id);
+    const { error } = await supabase.from('transfers').update({ status, reviewed_at }).eq('id', id);
+    setUpdatingId(null);
+
+    if (error) {
+      alert('حصل خطأ وميتحدثش التحويل، حاول تاني: ' + error.message);
+      return;
+    }
+
     setTransfers((prev) =>
       prev.map((t) => (t.id === id ? { ...t, status, reviewed_at } : t))
     );
     if (selectedTransfer?.id === id) {
       setSelectedTransfer((prev) => (prev ? { ...prev, status, reviewed_at } : prev));
     }
-    setUpdatingId(null);
   };
 
   const matchesBankOption = (bankName: string | null, option: string) => {
