@@ -28,9 +28,9 @@ function RepView() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col" dir="rtl">
       <Header />
-      <nav className="bg-slate-900 border-b border-slate-800 sticky top-[60px] z-40">
+      <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-[60px] z-40">
         <div className="max-w-2xl mx-auto px-4 flex">
           <TabButton
             active={tab === 'form'}
@@ -132,25 +132,25 @@ function AdminView() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-emerald-500 dark:text-emerald-400 animate-spin" />
       </div>
     );
   }
 
   if (unlocked) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col" dir="rtl">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col" dir="rtl">
         <Header />
-        <nav className="bg-slate-900 border-b border-slate-800 sticky top-[60px] z-40">
+        <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-[60px] z-40">
           <div className="max-w-2xl mx-auto px-4 flex items-center justify-between py-2.5 pr-4">
-            <div className="flex items-center gap-2 text-emerald-400">
+            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
               <LayoutDashboard className="w-4 h-4" />
               <span className="text-sm font-semibold">لوحة الإدارة</span>
             </div>
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 text-slate-400 hover:text-white text-xs transition-colors"
+              className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-xs transition-colors"
             >
               <ArrowRight className="w-3.5 h-3.5" />
               خروج
@@ -166,27 +166,27 @@ function AdminView() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-6" dir="rtl">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center px-6" dir="rtl">
       <div className="w-full max-w-sm">
         {/* Back link */}
         <button
           onClick={goBack}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm mb-8 transition-colors"
+          className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white text-sm mb-8 transition-colors"
         >
           <ArrowRight className="w-4 h-4" />
           العودة للتطبيق
         </button>
 
         {/* Card */}
-        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-7 shadow-2xl">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-7 shadow-xl dark:shadow-2xl">
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Lock className="w-8 h-8 text-emerald-400" />
+            <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Lock className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
             </div>
           </div>
 
-          <h2 className="text-white font-bold text-xl text-center mb-1">لوحة الإدارة</h2>
-          <p className="text-slate-400 text-sm text-center mb-6">
+          <h2 className="text-slate-900 dark:text-white font-bold text-xl text-center mb-1">لوحة الإدارة</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-sm text-center mb-6">
             هذه المنطقة مخصصة للمسؤولين فقط
           </p>
 
@@ -202,9 +202,9 @@ function AdminView() {
                 placeholder="اسم المستخدم (اتركه فارغاً للأدمن العام)"
                 autoComplete="username"
                 dir="ltr"
-                className="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors text-center"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors text-center"
               />
-              <p className="text-slate-500 text-xs text-center mt-1.5">
+              <p className="text-slate-400 dark:text-slate-500 text-xs text-center mt-1.5">
                 مدير فرع؟ اكتب اسم المستخدم بتاعك هنا
               </p>
             </div>
@@ -217,14 +217,14 @@ function AdminView() {
               }}
               placeholder="أدخل كلمة المرور"
               autoFocus
-              className={`w-full bg-slate-800 border ${
+              className={`w-full bg-slate-50 dark:bg-slate-800 border ${
                 hasError
                   ? 'border-red-500/70 focus:border-red-500'
-                  : 'border-slate-700 focus:border-emerald-500'
-              } text-white placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors text-center tracking-widest`}
+                  : 'border-slate-300 dark:border-slate-700 focus:border-emerald-500'
+              } text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors text-center tracking-widest`}
             />
             {hasError && (
-              <div className="flex items-center justify-center gap-1.5 text-red-400 text-xs">
+              <div className="flex items-center justify-center gap-1.5 text-red-500 dark:text-red-400 text-xs">
                 <AlertCircle className="w-3.5 h-3.5" />
                 {errorMsg}
               </div>
@@ -279,8 +279,8 @@ function TabButton({
       onClick={onClick}
       className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-b-2 transition-all duration-200 ${
         active
-          ? 'border-emerald-500 text-emerald-400'
-          : 'border-transparent text-slate-400 hover:text-slate-300'
+          ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+          : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
       }`}
     >
       {icon}
