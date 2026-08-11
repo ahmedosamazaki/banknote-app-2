@@ -47,7 +47,7 @@ interface BranchManagerRow {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
-  approved: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+  approved: 'bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30',
   rejected: 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30',
 };
 
@@ -311,10 +311,10 @@ export default function AdminDashboard() {
       {/* Stats Row */}
       <div className="grid grid-cols-3 gap-3">
         <StatCard
-          icon={<Banknote className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+          icon={<Banknote className="w-5 h-5 text-amber-600 dark:text-amber-400" />}
           label="إجمالي المبالغ"
           value={formatAmount(transfers.reduce((s, t) => s + Number(t.transfer_amount), 0))}
-          bg="bg-emerald-500/10 border-emerald-500/20"
+          bg="bg-amber-500/10 border-amber-500/20"
         />
         <StatCard
           icon={<Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
@@ -339,7 +339,7 @@ export default function AdminDashboard() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="بحث بالاسم، الفرع، رقم المرجع..."
-            className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl pr-10 pl-4 py-3 text-sm outline-none transition-colors duration-200"
+            className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl pr-10 pl-4 py-3 text-sm outline-none transition-colors duration-200"
           />
         </div>
 
@@ -373,14 +373,14 @@ export default function AdminDashboard() {
             onClick={exportCsv}
             disabled={filtered.length === 0}
             title="تصدير CSV"
-            className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-600 dark:text-slate-300 rounded-xl px-3 py-2 text-sm transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-amber-500/50 hover:text-amber-600 dark:hover:text-amber-400 text-slate-600 dark:text-slate-300 rounded-xl px-3 py-2 text-sm transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowQrCode(true)}
             title="QR Code للتطبيق"
-            className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-600 dark:text-slate-300 rounded-xl px-3 py-2 text-sm transition-colors duration-200"
+            className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-amber-500/50 hover:text-amber-600 dark:hover:text-amber-400 text-slate-600 dark:text-slate-300 rounded-xl px-3 py-2 text-sm transition-colors duration-200"
           >
             <QrCode className="w-4 h-4" />
           </button>
@@ -388,7 +388,7 @@ export default function AdminDashboard() {
             <button
               onClick={() => setShowCreateManager(true)}
               title="إنشاء حساب مدير فرع"
-              className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-emerald-500/50 hover:text-emerald-600 dark:hover:text-emerald-400 text-slate-600 dark:text-slate-300 rounded-xl px-3 py-2 text-sm transition-colors duration-200"
+              className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-amber-500/50 hover:text-amber-600 dark:hover:text-amber-400 text-slate-600 dark:text-slate-300 rounded-xl px-3 py-2 text-sm transition-colors duration-200"
             >
               <UserPlus className="w-4 h-4" />
             </button>
@@ -400,7 +400,7 @@ export default function AdminDashboard() {
       {!checkingManager && !isBranchManager && managers.length > 0 && (
         <div className="bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 space-y-2">
           <label className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 text-sm font-medium mb-1">
-            <UserPlus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <UserPlus className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             مديرو الفروع
           </label>
           {managers.map((m) => (
@@ -416,7 +416,7 @@ export default function AdminDashboard() {
               </div>
               <button
                 onClick={() => setResetPasswordFor(m)}
-                className="flex-shrink-0 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                className="flex-shrink-0 text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 text-xs font-medium px-2.5 py-1.5 rounded-lg hover:bg-amber-500/10 transition-colors"
               >
                 تغيير الباسورد
               </button>
@@ -428,14 +428,14 @@ export default function AdminDashboard() {
       {/* Bank Report Tool */}
       <div className="bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 space-y-3">
         <label className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 text-sm font-medium">
-          <Landmark className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <Landmark className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           تقرير تحويلات بنك معيّن
         </label>
         <div className="relative">
           <select
             value={bankReport}
             onChange={(e) => setBankReport(e.target.value)}
-            className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
+            className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
           >
             <option value="">اختر بنك / جهة لعرض تقريرها...</option>
             {BANK_OPTIONS.map((b) => (
@@ -449,9 +449,9 @@ export default function AdminDashboard() {
 
         {bankReportStats && (
           <div className="grid grid-cols-4 gap-2 pt-1">
-            <MiniStat label="الإجمالي" value={formatAmount(bankReportStats.total)} color="text-emerald-600 dark:text-emerald-400" />
+            <MiniStat label="الإجمالي" value={formatAmount(bankReportStats.total)} color="text-amber-600 dark:text-amber-400" />
             <MiniStat label="العدد" value={bankReportStats.count.toString()} color="text-blue-600 dark:text-blue-400" />
-            <MiniStat label="مقبول" value={bankReportStats.approved.toString()} color="text-emerald-600 dark:text-emerald-400" />
+            <MiniStat label="مقبول" value={bankReportStats.approved.toString()} color="text-green-600 dark:text-green-400" />
             <MiniStat label="قيد المراجعة" value={bankReportStats.pending.toString()} color="text-amber-600 dark:text-amber-400" />
           </div>
         )}
@@ -461,14 +461,14 @@ export default function AdminDashboard() {
       {!isBranchManager && (
         <div className="bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 space-y-3">
           <label className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 text-sm font-medium">
-            <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <Building2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             تقرير تحويلات فرع معيّن
           </label>
           <div className="relative">
             <select
               value={branchReport}
               onChange={(e) => setBranchReport(e.target.value)}
-              className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
+              className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
             >
               <option value="">اختر فرع لعرض تقريره...</option>
               {uniqueBranches.map((b) => (
@@ -482,9 +482,9 @@ export default function AdminDashboard() {
 
           {branchReportStats && (
             <div className="grid grid-cols-4 gap-2 pt-1">
-              <MiniStat label="الإجمالي" value={formatAmount(branchReportStats.total)} color="text-emerald-600 dark:text-emerald-400" />
+              <MiniStat label="الإجمالي" value={formatAmount(branchReportStats.total)} color="text-amber-600 dark:text-amber-400" />
               <MiniStat label="العدد" value={branchReportStats.count.toString()} color="text-blue-600 dark:text-blue-400" />
-              <MiniStat label="مقبول" value={branchReportStats.approved.toString()} color="text-emerald-600 dark:text-emerald-400" />
+              <MiniStat label="مقبول" value={branchReportStats.approved.toString()} color="text-green-600 dark:text-green-400" />
               <MiniStat label="قيد المراجعة" value={branchReportStats.pending.toString()} color="text-amber-600 dark:text-amber-400" />
             </div>
           )}
@@ -494,7 +494,7 @@ export default function AdminDashboard() {
       {/* Rep Report Tool */}
       <div className="bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 space-y-3">
         <label className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 text-sm font-medium">
-          <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <User className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           تقرير تحويلات مندوب معيّن
         </label>
         <div className="relative">
@@ -504,7 +504,7 @@ export default function AdminDashboard() {
             value={repReport}
             onChange={(e) => setRepReport(e.target.value)}
             placeholder="اكتب اسم المندوب..."
-            className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl pr-4 pl-9 py-2.5 text-sm outline-none transition-colors duration-200"
+            className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl pr-4 pl-9 py-2.5 text-sm outline-none transition-colors duration-200"
           />
           <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 dark:text-slate-400 pointer-events-none" />
           <datalist id="rep-names">
@@ -516,9 +516,9 @@ export default function AdminDashboard() {
 
         {repReportStats && (
           <div className="grid grid-cols-4 gap-2 pt-1">
-            <MiniStat label="الإجمالي" value={formatAmount(repReportStats.total)} color="text-emerald-600 dark:text-emerald-400" />
+            <MiniStat label="الإجمالي" value={formatAmount(repReportStats.total)} color="text-amber-600 dark:text-amber-400" />
             <MiniStat label="العدد" value={repReportStats.count.toString()} color="text-blue-600 dark:text-blue-400" />
-            <MiniStat label="مقبول" value={repReportStats.approved.toString()} color="text-emerald-600 dark:text-emerald-400" />
+            <MiniStat label="مقبول" value={repReportStats.approved.toString()} color="text-green-600 dark:text-green-400" />
             <MiniStat label="قيد المراجعة" value={repReportStats.pending.toString()} color="text-amber-600 dark:text-amber-400" />
           </div>
         )}
@@ -531,7 +531,7 @@ export default function AdminDashboard() {
             {filtered.length} تحويل {search || statusFilter !== 'all' || bankReport || branchReport || repReport ? '(مفلتر)' : ''}
           </p>
           {filtered.length > 0 && (
-            <p className="text-emerald-600 dark:text-emerald-400 text-xs font-medium flex items-center gap-1">
+            <p className="text-amber-600 dark:text-amber-400 text-xs font-medium flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               {formatAmount(totalAmount)}
             </p>
@@ -705,7 +705,7 @@ function TransferCard({
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-emerald-600 dark:text-emerald-400 font-bold text-lg">{formatAmount(t.transfer_amount)}</p>
+            <p className="text-amber-600 dark:text-amber-400 font-bold text-lg">{formatAmount(t.transfer_amount)}</p>
             <p className="text-slate-400 dark:text-slate-500 text-xs flex items-center gap-1 mt-0.5">
               <Calendar className="w-3 h-3" />
               {formatDate(t.created_at)}
@@ -741,7 +741,7 @@ function TransferCard({
             <button
               onClick={onApprove}
               disabled={isUpdating}
-              className="flex items-center justify-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-300 text-xs py-1.5 px-2.5 rounded-lg hover:bg-emerald-500/10 transition-colors disabled:opacity-50"
+              className="flex items-center justify-center gap-1 text-green-600 dark:text-green-400 hover:text-green-500 dark:hover:text-green-300 text-xs py-1.5 px-2.5 rounded-lg hover:bg-green-500/10 transition-colors disabled:opacity-50"
             >
               <CheckCircle className="w-3.5 h-3.5" />
               قبول
@@ -810,9 +810,9 @@ function DetailModal({
           </div>
 
           {/* Amount highlight */}
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 text-center">
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">المبلغ</p>
-            <p className="text-emerald-600 dark:text-emerald-400 font-bold text-3xl">{formatAmount(t.transfer_amount)}</p>
+            <p className="text-amber-600 dark:text-amber-400 font-bold text-3xl">{formatAmount(t.transfer_amount)}</p>
             <p className={`text-xs mt-1.5 font-medium ${t.transfer_type === 'instapay' ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}>
               {t.transfer_type === 'instapay' ? 'InstaPay' : 'فودافون كاش'}
             </p>
@@ -876,7 +876,7 @@ function DetailModal({
               <button
                 onClick={onApprove}
                 disabled={isUpdating}
-                className="flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-600 dark:text-emerald-400 font-semibold py-3 rounded-xl transition-all disabled:opacity-50"
+                className="flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 hover:border-green-500/50 text-green-600 dark:text-green-400 font-semibold py-3 rounded-xl transition-all disabled:opacity-50"
               >
                 <CheckCircle className="w-5 h-5" />
                 قبول
@@ -975,7 +975,7 @@ function QrCodeModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={download}
             disabled={!dataUrl}
-            className="flex-1 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-900 dark:text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+            className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 dark:text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
           >
             تحميل الصورة
           </button>
@@ -1064,7 +1064,7 @@ function CreateManagerModal({ onClose, onCreated }: { onClose: () => void; onCre
               onChange={(e) => setFullName(e.target.value)}
               placeholder="اسم مدير الفرع"
               required
-              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
+              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
             />
           </div>
 
@@ -1075,7 +1075,7 @@ function CreateManagerModal({ onClose, onCreated }: { onClose: () => void; onCre
                 value={branchName}
                 onChange={(e) => setBranchName(e.target.value)}
                 required
-                className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
+                className="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white rounded-xl px-4 py-2.5 pl-9 text-sm outline-none transition-colors duration-200"
               >
                 <option value="">اختر الفرع</option>
                 {BRANCHES.map((b) => (
@@ -1097,7 +1097,7 @@ function CreateManagerModal({ onClose, onCreated }: { onClose: () => void; onCre
               placeholder="مثال: haram_manager"
               dir="ltr"
               required
-              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
+              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
             />
           </div>
 
@@ -1110,7 +1110,7 @@ function CreateManagerModal({ onClose, onCreated }: { onClose: () => void; onCre
               placeholder="6 أحرف على الأقل"
               required
               minLength={6}
-              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
+              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
             />
           </div>
 
@@ -1121,16 +1121,16 @@ function CreateManagerModal({ onClose, onCreated }: { onClose: () => void; onCre
             </div>
           )}
           {success && (
-            <div className="flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
-              <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-              <p className="text-emerald-600 dark:text-emerald-400 text-xs leading-relaxed">{success}</p>
+            <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+              <CheckCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-amber-600 dark:text-amber-400 text-xs leading-relaxed">{success}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-900 dark:text-white font-semibold py-2.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 mt-2"
+            className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 dark:text-white font-semibold py-2.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 mt-2"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
             إنشاء الحساب
@@ -1216,7 +1216,7 @@ function ResetPasswordModal({
               placeholder="6 أحرف على الأقل"
               required
               minLength={6}
-              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
+              className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors duration-200"
             />
           </div>
 
@@ -1227,16 +1227,16 @@ function ResetPasswordModal({
             </div>
           )}
           {success && (
-            <div className="flex items-start gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
-              <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-              <p className="text-emerald-600 dark:text-emerald-400 text-xs leading-relaxed">{success}</p>
+            <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3">
+              <CheckCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-amber-600 dark:text-amber-400 text-xs leading-relaxed">{success}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-900 dark:text-white font-semibold py-2.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 mt-2"
+            className="w-full bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 dark:text-white font-semibold py-2.5 rounded-xl transition-colors text-sm flex items-center justify-center gap-2 mt-2"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
             حفظ كلمة المرور
