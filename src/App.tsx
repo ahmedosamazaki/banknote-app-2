@@ -133,7 +133,7 @@ function AdminView() {
   if (checkingSession) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-emerald-500 dark:text-emerald-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-amber-500 dark:text-amber-400 animate-spin" />
       </div>
     );
   }
@@ -144,7 +144,7 @@ function AdminView() {
         <Header />
         <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-[60px] z-40">
           <div className="max-w-2xl mx-auto px-4 flex items-center justify-between py-2.5 pr-4">
-            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
               <LayoutDashboard className="w-4 h-4" />
               <span className="text-sm font-semibold">لوحة الإدارة</span>
             </div>
@@ -181,7 +181,7 @@ function AdminView() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-7 shadow-xl dark:shadow-2xl">
           <div className="flex justify-center mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 border border-slate-200 dark:border-slate-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Lock className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+              <Lock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
             </div>
           </div>
 
@@ -202,7 +202,7 @@ function AdminView() {
                 placeholder="اسم المستخدم (اتركه فارغاً للأدمن العام)"
                 autoComplete="username"
                 dir="ltr"
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors text-center"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors text-center"
               />
               <p className="text-slate-400 dark:text-slate-500 text-xs text-center mt-1.5">
                 مدير فرع؟ اكتب اسم المستخدم بتاعك هنا
@@ -220,7 +220,7 @@ function AdminView() {
               className={`w-full bg-slate-50 dark:bg-slate-800 border ${
                 hasError
                   ? 'border-red-500/70 focus:border-red-500'
-                  : 'border-slate-300 dark:border-slate-700 focus:border-emerald-500'
+                  : 'border-slate-300 dark:border-slate-700 focus:border-amber-500'
               } text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors text-center tracking-widest`}
             />
             {hasError && (
@@ -232,7 +232,7 @@ function AdminView() {
             <button
               type="submit"
               disabled={!input || submitting}
-              className="w-full bg-gradient-to-l from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all duration-200 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-l from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all duration-200 shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
               دخول
@@ -279,7 +279,7 @@ function TabButton({
       onClick={onClick}
       className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium border-b-2 transition-all duration-200 ${
         active
-          ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
+          ? 'border-amber-500 text-amber-600 dark:text-amber-400'
           : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
       }`}
     >
