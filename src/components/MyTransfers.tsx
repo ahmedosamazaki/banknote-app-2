@@ -24,7 +24,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
-  approved: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
+  approved: 'bg-green-500/15 text-green-600 dark:text-green-400 border-green-500/30',
   rejected: 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30',
 };
 
@@ -111,7 +111,7 @@ export default function MyTransfers() {
             onClick={() => { setSearchType('name'); setQuery(''); setSearched(false); }}
             className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 ${
               searchType === 'name'
-                ? 'border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                ? 'border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400'
                 : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400'
             }`}
           >
@@ -123,7 +123,7 @@ export default function MyTransfers() {
             onClick={() => { setSearchType('phone'); setQuery(''); setSearched(false); }}
             className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 ${
               searchType === 'phone'
-                ? 'border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                ? 'border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400'
                 : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400'
             }`}
           >
@@ -142,13 +142,13 @@ export default function MyTransfers() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder={searchType === 'name' ? 'أدخل اسمك كاملاً...' : '01xxxxxxxxx'}
               dir={searchType === 'phone' ? 'ltr' : 'rtl'}
-              className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl pr-10 pl-4 py-3 text-sm outline-none transition-colors"
+              className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-300 dark:border-slate-700 focus:border-amber-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl pr-10 pl-4 py-3 text-sm outline-none transition-colors"
             />
           </div>
           <button
             type="submit"
             disabled={!query.trim() || loading}
-            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
+            className="bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
           >
             بحث
           </button>
@@ -175,8 +175,8 @@ export default function MyTransfers() {
             <p className="text-slate-900 dark:text-white font-bold text-lg">{transfers.length}</p>
             <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">إجمالي</p>
           </div>
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
-            <p className="text-emerald-600 dark:text-emerald-400 font-bold text-lg">{approvedCount}</p>
+          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-3 text-center">
+            <p className="text-green-600 dark:text-green-400 font-bold text-lg">{approvedCount}</p>
             <p className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">مقبول</p>
           </div>
           <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-center">
@@ -262,7 +262,7 @@ function RepTransferCard({
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <p className="text-emerald-600 dark:text-emerald-400 font-bold text-xl">{formatAmount(t.transfer_amount)}</p>
+            <p className="text-amber-600 dark:text-amber-400 font-bold text-xl">{formatAmount(t.transfer_amount)}</p>
             <span
               className={`text-xs font-medium px-2.5 py-1 rounded-full border flex items-center gap-1 flex-shrink-0 ${STATUS_COLORS[t.status]}`}
             >
