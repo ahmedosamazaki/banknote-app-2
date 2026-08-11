@@ -16,7 +16,7 @@ export default function Header() {
             <h1 className="text-slate-900 dark:text-white font-bold text-lg tracking-tight leading-tight">
               {COMPANY_NAME}
             </h1>
-            <p className="text-emerald-600 dark:text-emerald-400 text-xs font-medium tracking-wider">
+            <p className="text-amber-600 dark:text-amber-400 text-xs font-medium tracking-wider">
               نظام تتبع التحويلات
             </p>
           </div>
@@ -29,9 +29,9 @@ export default function Header() {
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full px-3 py-1.5">
-            <Shield className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-emerald-600 dark:text-emerald-400 text-xs font-medium">آمن</span>
+          <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 rounded-full px-3 py-1.5">
+            <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">آمن</span>
           </div>
         </div>
       </div>
