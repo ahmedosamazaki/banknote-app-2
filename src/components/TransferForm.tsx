@@ -2,10 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
   User,
   Building2,
-  DollarSign,
   Phone,
-  Hash,
-  FileText,
   Camera,
   Images,
   Scan,
@@ -189,18 +186,17 @@ export default function TransferForm() {
   };
 
   const validate = (): boolean => {
+    // Amount / reference / bank / wallet-type are no longer asked of the rep
+    // (the AI receipt scan attempts them silently in the background, but
+    // isn't reliable enough to require) — only identity + proof matter here.
     const newErrors: Partial<Record<keyof FormData, string>> = {};
     if (!form.representative_name.trim())
       newErrors.representative_name = 'الاسم مطلوب';
     if (!form.branch_name.trim()) newErrors.branch_name = 'الفرع مطلوب';
-    if (!form.transfer_amount || isNaN(Number(form.transfer_amount)) || Number(form.transfer_amount) <= 0)
-      newErrors.transfer_amount = 'أدخل مبلغاً صحيحاً';
     if (!EGYPT_PHONE_REGEX.test(form.sender_phone.replace(/\D/g, '')))
       newErrors.sender_phone = 'أدخل رقم موبايل مصري صحيح (01 ثم 10 أرقام)';
     if (form.transfer_type === 'vodafone_cash' && !form.wallet_provider.trim())
       newErrors.wallet_provider = 'اختر المحفظة';
-    if (!form.reference_number.trim()) newErrors.reference_number = 'رقم العملية مطلوب';
-    if (!form.bank_name.trim()) newErrors.bank_name = 'اسم البنك مطلوب';
     setErrors(newErrors);
 
     const receiptOk = !!receiptFile;
@@ -240,7 +236,9 @@ export default function TransferForm() {
       const newTransfer = {
         representative_name: form.representative_name.trim(),
         branch_name: form.branch_name.trim(),
-        transfer_amount: Number(form.transfer_amount),
+        // Not asked of the rep anymore — only ever set if the silent AI scan
+        // (see processReceiptFile) managed to read it off the receipt.
+        transfer_amount: form.transfer_amount ? Number(form.transfer_amount) : null,
         sender_phone: form.sender_phone.trim(),
         reference_number: form.reference_number.trim() || null,
         transfer_type: form.transfer_type,
@@ -314,8 +312,8 @@ export default function TransferForm() {
   if (submitted) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
-        <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6 animate-scale-in">
-          <CheckCircle className="w-12 h-12 text-emerald-500" />
+        <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center mb-6 animate-scale-in">
+          <CheckCircle className="w-12 h-12 text-amber-500" />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">تم الإرسال بنجاح!</h2>
         <p className="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
@@ -323,7 +321,7 @@ export default function TransferForm() {
         </p>
         <button
           onClick={() => setSubmitted(false)}
-          className="bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 shadow-lg shadow-emerald-500/25"
+          className="bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 shadow-lg shadow-amber-500/25"
         >
           تسجيل تحويل جديد
         </button>
@@ -388,7 +386,7 @@ export default function TransferForm() {
                 }}
                 className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                   !otherWalletMode && form.wallet_provider === w
-                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                    ? 'border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400'
                     : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
                 }`}
               >
@@ -403,7 +401,7 @@ export default function TransferForm() {
               }}
               className={`py-2.5 px-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                 otherWalletMode
-                  ? 'border-emerald-500 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                  ? 'border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400'
                   : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
               }`}
             >
@@ -432,10 +430,10 @@ export default function TransferForm() {
             {/* Camera button */}
             <label
               htmlFor="receipt-camera"
-              className="flex flex-col items-center justify-center gap-2.5 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500/50 bg-slate-50 dark:bg-slate-800/30 hover:bg-emerald-500/5 rounded-xl py-5 px-3 cursor-pointer transition-all duration-200 group"
+              className="flex flex-col items-center justify-center gap-2.5 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-amber-500/50 bg-slate-50 dark:bg-slate-800/30 hover:bg-amber-500/5 rounded-xl py-5 px-3 cursor-pointer transition-all duration-200 group"
             >
-              <div className="w-11 h-11 bg-slate-200 dark:bg-slate-700/50 group-hover:bg-emerald-500/10 rounded-full flex items-center justify-center transition-colors duration-200">
-                <Camera className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors duration-200" />
+              <div className="w-11 h-11 bg-slate-200 dark:bg-slate-700/50 group-hover:bg-amber-500/10 rounded-full flex items-center justify-center transition-colors duration-200">
+                <Camera className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors duration-200" />
               </div>
               <div className="text-center">
                 <p className="text-slate-600 dark:text-slate-300 font-medium text-xs">تصوير الإيصال</p>
@@ -491,10 +489,10 @@ export default function TransferForm() {
             {ocrLoading && (
               <div className="absolute inset-0 bg-slate-900/70 flex flex-col items-center justify-center gap-2">
                 <div className="relative">
-                  <Scan className="w-8 h-8 text-emerald-400 animate-pulse" />
-                  <div className="absolute inset-0 border-2 border-emerald-400/30 rounded-sm animate-scan-line" />
+                  <Scan className="w-8 h-8 text-amber-400 animate-pulse" />
+                  <div className="absolute inset-0 border-2 border-amber-400/30 rounded-sm animate-scan-line" />
                 </div>
-                <p className="text-emerald-400 text-sm font-medium">جاري فحص الإيصال بالذكاء الاصطناعي...</p>
+                <p className="text-amber-400 text-sm font-medium">جاري فحص الإيصال بالذكاء الاصطناعي...</p>
               </div>
             )}
             {ocrDone && !ocrLoading && aiResult?.isSuspicious && (
@@ -506,7 +504,7 @@ export default function TransferForm() {
               </div>
             )}
             {ocrDone && !ocrLoading && aiResult && !aiResult.isSuspicious && aiResult.configured && (
-              <div className="absolute bottom-0 inset-x-0 bg-emerald-500/90 px-3 py-2 flex items-center gap-2">
+              <div className="absolute bottom-0 inset-x-0 bg-amber-500/90 px-3 py-2 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-white flex-shrink-0" />
                 <span className="text-white text-xs font-medium">تم فحص الإيصال واستخراج البيانات بنجاح</span>
               </div>
@@ -568,24 +566,6 @@ export default function TransferForm() {
         </div>
       </FormField>
 
-      {/* Transfer Amount */}
-      <FormField
-        label="المبلغ (جنيه)"
-        icon={<DollarSign className="w-4 h-4" />}
-        error={errors.transfer_amount}
-      >
-        <input
-          type="number"
-          inputMode="decimal"
-          value={form.transfer_amount}
-          onChange={(e) => set('transfer_amount', e.target.value)}
-          placeholder="0.00"
-          min="0"
-          step="0.01"
-          className={inputClass(!!errors.transfer_amount)}
-        />
-      </FormField>
-
       {/* Sender Phone */}
       <FormField
         label="رقم هاتف المرسل"
@@ -604,45 +584,6 @@ export default function TransferForm() {
         />
       </FormField>
 
-      {/* Reference Number */}
-      <FormField
-        label="رقم العملية / المرجع"
-        icon={<Hash className="w-4 h-4" />}
-        error={errors.reference_number}
-      >
-        <input
-          type="text"
-          inputMode="text"
-          value={form.reference_number}
-          onChange={(e) => set('reference_number', e.target.value)}
-          placeholder="أدخل رقم المرجع"
-          className={inputClass(!!errors.reference_number)}
-          dir="ltr"
-        />
-      </FormField>
-
-      {/* Bank Name */}
-      <FormField label="اسم البنك / الجهة" icon={<CreditCard className="w-4 h-4" />} error={errors.bank_name}>
-        <input
-          type="text"
-          value={form.bank_name}
-          onChange={(e) => set('bank_name', e.target.value)}
-          placeholder="مثال: بنك مصر، فودافون كاش"
-          className={inputClass(!!errors.bank_name)}
-        />
-      </FormField>
-
-      {/* Notes */}
-      <FormField label="ملاحظات" icon={<FileText className="w-4 h-4" />}>
-        <textarea
-          value={form.notes}
-          onChange={(e) => set('notes', e.target.value)}
-          placeholder="أي ملاحظات إضافية..."
-          rows={3}
-          className={`${inputClass(false)} resize-none`}
-        />
-      </FormField>
-
       {error && (
         <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 rounded-xl p-3.5">
           <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -653,7 +594,7 @@ export default function TransferForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full bg-gradient-to-l from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:from-emerald-600 active:to-teal-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-500/20 transition-all duration-200 text-base"
+        className="w-full bg-gradient-to-l from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:from-amber-600 active:to-orange-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2.5 shadow-lg shadow-amber-500/20 transition-all duration-200 text-base"
       >
         {submitting ? (
           <>
@@ -701,6 +642,6 @@ function FormField({
 
 function inputClass(hasError: boolean) {
   return `w-full bg-slate-50 dark:bg-slate-800/60 border ${
-    hasError ? 'border-red-500/60 focus:border-red-500' : 'border-slate-300 dark:border-slate-700 focus:border-emerald-500'
+    hasError ? 'border-red-500/60 focus:border-red-500' : 'border-slate-300 dark:border-slate-700 focus:border-amber-500'
   } text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors duration-200 focus:bg-white dark:focus:bg-slate-800`;
 }
