@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.banknote_app_2.twa",
+      "sha256_cert_fingerprints": [
+        "AD:45:78:DD:A1:2E:DB:89:4E:00:D9:C3:F9:1E:30:EE:48:15:B2:F0:96:E5:D9:B4:C8:98:89:93:94:73:84:B6"
+      ]
+    }
+  }
+]
