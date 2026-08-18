@@ -59,6 +59,7 @@ export async function verifyReceiptWithAI(file: File): Promise<ReceiptVerificati
       date: body.date ?? undefined,
       transferType: body.transferType ?? undefined,
       isSuspicious: !!body.isSuspicious,
+      suspicionType: body.suspicionType ?? undefined,
       suspicionReason: body.suspicionReason ?? undefined,
       configured: true,
     };
