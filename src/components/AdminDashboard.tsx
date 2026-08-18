@@ -688,9 +688,9 @@ function TransferCard({
     >
       <div className="p-4">
         {t.ai_flagged && (
-          <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 text-xs font-medium mb-2.5">
+          <div className={`flex items-center gap-1.5 text-xs font-bold mb-2.5 ${t.ai_flag_type === 'tampering' ? 'text-red-700 dark:text-red-400 animate-pulse' : 'text-amber-600 dark:text-amber-400'}`}>
             <ShieldAlert className="w-3.5 h-3.5" />
-            إيصال مشتبه به — يحتاج مراجعة
+            {t.ai_flag_type === 'tampering' ? '⚠️ احتمال تزوير — راجع فورًا' : 'جودة الصورة ضعيفة — يحتاج مراجعة'}
           </div>
         )}
         <div className="flex items-start justify-between gap-2 mb-3">
@@ -820,11 +820,13 @@ function DetailModal({
 
           {/* AI flag warning */}
           {t.ai_flagged && (
-            <div className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/30 rounded-xl p-3.5">
-              <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+            <div className={`flex items-start gap-2.5 rounded-xl p-3.5 ${t.ai_flag_type === 'tampering' ? 'bg-red-500/15 border-2 border-red-500/50' : 'bg-amber-500/10 border border-amber-500/30'}`}>
+              <ShieldAlert className={`w-4 h-4 flex-shrink-0 mt-0.5 ${t.ai_flag_type === 'tampering' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`} />
               <div>
-                <p className="text-red-600 dark:text-red-400 text-sm font-semibold">تنبيه من الفحص الآلي</p>
-                <p className="text-red-500/90 dark:text-red-300/90 text-sm leading-relaxed mt-0.5">
+                <p className={`text-sm font-bold ${t.ai_flag_type === 'tampering' ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                  {t.ai_flag_type === 'tampering' ? '⚠️ احتمال تزوير — الذكاء الاصطناعي لاقى علامة تلاعب واضحة' : 'ملحوظة: جودة تصوير الإيصال ضعيفة'}
+                </p>
+                <p className={`text-sm leading-relaxed mt-0.5 ${t.ai_flag_type === 'tampering' ? 'text-red-600/90 dark:text-red-300/90' : 'text-amber-600/90 dark:text-amber-300/90'}`}>
                   {t.ai_flag_reason || 'الإيصال يبدو مشتبهاً به، راجع الصورة بعناية قبل القبول.'}
                 </p>
               </div>
