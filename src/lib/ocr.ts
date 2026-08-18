@@ -5,6 +5,7 @@ export interface ReceiptVerification {
   date?: string;
   transferType?: 'instapay' | 'vodafone_cash';
   isSuspicious: boolean;
+  suspicionType?: 'quality' | 'tampering';
   suspicionReason?: string;
   configured: boolean;
   error?: string;
